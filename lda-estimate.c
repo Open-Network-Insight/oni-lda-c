@@ -350,22 +350,23 @@ void run_em(char* start, char* directory, corpus* corpus)
 		}
 		else
 		{
-			  //for (d = corpus->num_docs/nproc-1; d < corpus->num_docs; d++) // num_docs -num_docs/nproc
-			  for (d = (corpus->num_docs-1)/nproc + 1; d < corpus->num_docs; d++) // num_docs -num_docs/nproc
-			  {
-				MPI_Status status;
+            for (d=0 ; d < corpus->num_docs; d++) {
 
-				  MPI_Recv(&gamma_global,1,MPI_DOUBLE,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
-				  if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n",status.MPI_TAG);
-				  var_gamma[status.MPI_TAG][k] = gamma_global;
-			  }
-			for (d = myid; d < corpus->num_docs; d += nproc)
-			{
-				//printf("**** document %d  local****\n", d);
-				//MPI_Request request;
-				gamma_local = var_gamma_local[d][k];
-				var_gamma[d][k] = gamma_local;
-			}
+                if (d % myid != 0) // num_docs -num_docs/nproc
+                {
+                    MPI_Status status;
+
+                    MPI_Recv(&gamma_global, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                    if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n", status.MPI_TAG);
+                    var_gamma[status.MPI_TAG][k] = gamma_global;
+                }
+                if (d % myid == 0) {
+                    //printf("**** document %d  local****\n", d);
+                    //MPI_Request request;
+                    gamma_local = var_gamma_local[d][k];
+                    var_gamma[d][k] = gamma_local;
+                }
+            }
 
 		}
 		if (myid < 1) printf("*****%d hit barrier*****\n",myid);
