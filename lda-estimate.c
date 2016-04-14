@@ -25,23 +25,23 @@
  *
  */
 
-double doc_e_step(document* doc, double* gamma, double** phi,
+double doc_e_step(document* doc, double* var_gamma, double** var_phi,
                   lda_model* model, lda_suffstats* ss)
 {
     double likelihood;
     int n, k;
 
-    // posterior inference
+    // posterior inference... updates var_gamma
 
-    likelihood = lda_inference(doc, model, gamma, phi);
+    likelihood = lda_inference(doc, model, var_gamma, var_phi);
 
     // update sufficient statistics
 
     double gamma_sum = 0;
     for (k = 0; k < model->num_topics; k++)
     {
-        gamma_sum += gamma[k];
-        ss->alpha_suffstats += digamma(gamma[k]);
+        gamma_sum += var_gamma[k];
+        ss->alpha_suffstats += digamma(var_gamma[k]);
     }
     ss->alpha_suffstats -= model->num_topics * digamma(gamma_sum);
 
@@ -49,8 +49,8 @@ double doc_e_step(document* doc, double* gamma, double** phi,
     {
         for (k = 0; k < model->num_topics; k++)
         {
-            ss->class_word[k][doc->words[n]] += doc->counts[n]*phi[n][k];
-            ss->class_total[k] += doc->counts[n]*phi[n][k];
+            ss->class_word[k][doc->words[n]] += doc->counts[n]*var_phi[n][k];
+            ss->class_total[k] += doc->counts[n]*var_phi[n][k];
         }
     }
 
@@ -352,7 +352,7 @@ void run_em(char* start, char* directory, corpus* corpus)
 		{
             for (d=0 ; d < corpus->num_docs; d++) {
 
-                if (d % myid != 0) // num_docs -num_docs/nproc
+                if (d % myid != 0)
                 {
                     MPI_Status status;
 
@@ -360,9 +360,8 @@ void run_em(char* start, char* directory, corpus* corpus)
                     if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n", status.MPI_TAG);
                     var_gamma[status.MPI_TAG][k] = gamma_global;
                 }
-                if (d % myid == 0) {
-                    //printf("**** document %d  local****\n", d);
-                    //MPI_Request request;
+                else
+                {
                     gamma_local = var_gamma_local[d][k];
                     var_gamma[d][k] = gamma_local;
                 }
