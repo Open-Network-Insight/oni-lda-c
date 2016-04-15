@@ -337,7 +337,7 @@ void run_em(char* start, char* directory, corpus* corpus)
     // gather gammas across workers
 	for (k = 0; k < model->num_topics; k++)
 	{
-		if (myid < 1) printf("**** saving gamma matrix topic %d , %d ****\n", k,myid);
+		if (myid == 0) printf("**** saving gamma matrix topic %d  ****\n", k);
 		if (myid > 0)
 		{
 			for (d = myid; d < corpus->num_docs; d += nproc)
@@ -352,7 +352,7 @@ void run_em(char* start, char* directory, corpus* corpus)
 		{
             for (d=0 ; d < corpus->num_docs; d++) {
 
-                if (d%nproc == myid)
+                if (d % nproc != myid)
                 {
                     MPI_Status status;
 
