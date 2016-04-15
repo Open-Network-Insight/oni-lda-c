@@ -352,7 +352,7 @@ void run_em(char* start, char* directory, corpus* corpus)
 		{
             for (d=0 ; d < corpus->num_docs; d++) {
 
-                if (d % myid != 0)
+                if (d%nproc == myid)
                 {
                     MPI_Status status;
 
