@@ -25,8 +25,8 @@ double INITIAL_ALPHA;
 int NTOPICS;
 
 double doc_e_step(document* doc,
-                  double* gamma,
-                  double** phi,
+                  double* var_gamma,
+                  double** var_phi,
                   lda_model* model,
                   lda_suffstats* ss);
 
