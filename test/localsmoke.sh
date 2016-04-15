@@ -13,8 +13,8 @@ export LUSER
 export TOL
 export KRB_AUTH
 
-rm -Rf testout
-mkdir testout
+rm -Rf /tmp/testout
+mkdir /tmp/testout
 
-mpiexec.hydra -n 2 ../lda est 2.5 20 ../settings.txt model.dat random testout
+mpiexec.hydra -n 2 ../lda est 2.5 20 ../settings.txt model.dat random /tmp/testout
 
