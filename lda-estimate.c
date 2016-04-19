@@ -335,7 +335,7 @@ void run_em(char* start, char* directory, corpus* corpus)
     save_lda_model(model, filename);
     sprintf(filename,"%s/final.gamma",directory);
     // gather gammas across workers
-    printf("\n\n****** WORKER %d STANDING BY ****** \n\n", myid);
+
 	for (k = 0; k < model->num_topics; k++)
 	{
 		if (myid == 0) printf("**** saving gamma matrix topic %d  ****\n", k);
@@ -345,11 +345,8 @@ void run_em(char* start, char* directory, corpus* corpus)
 			{
 				//MPI_Request request;
 				gamma_local = var_gamma_local[d][k];
-                // nls test
-                printf("*** DOING A BLOCKING SEND , process == %d, doc == %d\n", myid, d);
 				MPI_Send(&gamma_local,1,MPI_DOUBLE,0, d, MPI_COMM_WORLD);
-				 // if (d >  corpus->num_docs - 5) printf("**** source %d  sent****\n",d);
-                printf("**** doc %d  sent****\n",d);
+                if (d >  corpus->num_docs - 5) printf("**** source %d  sent****\n",d);
 			}
 		}
 		else
@@ -359,12 +356,8 @@ void run_em(char* start, char* directory, corpus* corpus)
                 if (d % nproc != 0)  // these documents were handled on other workers and must be gathered
                 {
                     MPI_Status status;
-
-                    // nls test
-                    printf("*** DOING A BLOCKING RECEIVE (for doc %d ) \n", d);
                     MPI_Recv(&gamma_global, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-                    // if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n", status.MPI_TAG);
-                    printf("**** doc %d  received****\n", status.MPI_TAG);
+                    if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n", status.MPI_TAG);
                     var_gamma[status.MPI_TAG][k] = gamma_global;
                 }
                 else
