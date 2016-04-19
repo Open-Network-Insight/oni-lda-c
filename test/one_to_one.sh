@@ -1,8 +1,12 @@
 #!/bin/bash
-
-# THIS TEST RUNS IN LOCAL MODE.
-
-# NUMBER OF PROCESSES MUST MATCH THE COMPILED-IN VALUES in lda-estimate.c OTHERWISE LDA CAN HANG DURING WRITEBACK!
+#
+# Local topic modelling corner case: one word per topic, one topic per document.
+# usage:
+#  ./one_to_one.sh <# of processes> <# of topics> <error threshold>
+# example:
+#  ./one_to_one.sh 6 1000 0.1
+#
+# The number of processes has to match those compiled into lda-estimate.c or there can be a hang
 
 NUMBER_OF_PROCESSES=$1
 NUMBER_OF_TOPICS=$2
