@@ -434,7 +434,7 @@ int read_machinefile(char* filename)
     const int LINE_SIZE = 256;
     char line[LINE_SIZE];
 
-    char hostNameBuffer[LINE_SIZE];
+    char* hostName;
     int processCountAtHost = 0;
     int processCount = 0;
 
@@ -443,7 +443,8 @@ int read_machinefile(char* filename)
     while(fgets(line, LINE_SIZE, pFile) != NULL)
     {
         printf("%s\n", line);
-        sscanf (line, "%s:%d", &hostNameBuffer[0], &processCountAtHost);
+        hostName = strtok(line,":");
+        processCountAtHost = atoi(strtok(NULL,":"));
         processCount += processCountAtHost;
     }
 
