@@ -529,6 +529,7 @@ int main(int argc, char* argv[])
     {
         if (strcmp(argv[OPERATION_ARG], "est")==0)
         {
+            printf("Beginning LDA model estimation.\n\n");
             INITIAL_ALPHA = atof(argv[ALPHA_ARG]);
             NTOPICS = atoi(argv[NTOPICS_ARG]);
             //should read alpha in as a vector instead of from args
@@ -552,8 +553,8 @@ int main(int argc, char* argv[])
     }
     else
     {
-        printf("usage : lda est [initial alpha] [k] [settings] [data] [random/seeded/*] [directory]\n");
-        printf("        lda inf [settings] [model] [data] [name]\n");
+        printf("usage : lda est [initial alpha] [k] [settings] [machinefile] [data] [random/seeded/*] [directory]\n");
+        printf("        lda inf [settings] [machinefile] [model] [data] [name]\n");
     }
     return(0);
 }
