@@ -441,7 +441,7 @@ int read_machinefile(char* filename)
     pFile = fopen(filename, "r");
     while(fgets(line, LINE_SIZE, pFile) != NULL)
     {
-        sscanf (line, "%s:%d", &hostNameBuffer[0], &processCountAtHost);
+        fscanf (line, "%s:%d\n", &hostNameBuffer[0], &processCountAtHost);
         processCount += processCountAtHost;
     }
 
