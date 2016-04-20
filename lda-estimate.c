@@ -25,23 +25,23 @@
  *
  */
 
-double doc_e_step(document* doc, double* gamma, double** phi,
+double doc_e_step(document* doc, double* var_gamma, double** var_phi,
                   lda_model* model, lda_suffstats* ss)
 {
     double likelihood;
     int n, k;
 
-    // posterior inference
+    // posterior inference... updates var_gamma
 
-    likelihood = lda_inference(doc, model, gamma, phi);
+    likelihood = lda_inference(doc, model, var_gamma, var_phi);
 
     // update sufficient statistics
 
     double gamma_sum = 0;
     for (k = 0; k < model->num_topics; k++)
     {
-        gamma_sum += gamma[k];
-        ss->alpha_suffstats += digamma(gamma[k]);
+        gamma_sum += var_gamma[k];
+        ss->alpha_suffstats += digamma(var_gamma[k]);
     }
     ss->alpha_suffstats -= model->num_topics * digamma(gamma_sum);
 
@@ -49,8 +49,8 @@ double doc_e_step(document* doc, double* gamma, double** phi,
     {
         for (k = 0; k < model->num_topics; k++)
         {
-            ss->class_word[k][doc->words[n]] += doc->counts[n]*phi[n][k];
-            ss->class_total[k] += doc->counts[n]*phi[n][k];
+            ss->class_word[k][doc->words[n]] += doc->counts[n]*var_phi[n][k];
+            ss->class_total[k] += doc->counts[n]*var_phi[n][k];
         }
     }
 
@@ -187,9 +187,9 @@ void run_em(char* start, char* directory, corpus* corpus)
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 	MPI_Comm_size(MPI_COMM_WORLD, &pnum);
 
-	int wkr = 4;
-	int wproc = 5;
-	int nproc = wkr*wproc; //14 * 9
+	int wkr = 2;
+	int wproc = 3;
+	int nproc = wkr*wproc; // 2*3 == 6
 
     while (((converged < 0) || (converged > EM_CONVERGED) || (i <= 2)) && (i <= EM_MAX_ITER))
     {
@@ -335,37 +335,37 @@ void run_em(char* start, char* directory, corpus* corpus)
     save_lda_model(model, filename);
     sprintf(filename,"%s/final.gamma",directory);
     // gather gammas across workers
+
 	for (k = 0; k < model->num_topics; k++)
 	{
-		if (myid < 1) printf("**** saving gamma matrix topic %d , %d ****\n", k,myid);
+		if (myid == 0) printf("**** saving gamma matrix topic %d  ****\n", k);
 		if (myid > 0)
 		{
 			for (d = myid; d < corpus->num_docs; d += nproc)
 			{
 				//MPI_Request request;
 				gamma_local = var_gamma_local[d][k];
-				MPI_Send(&gamma_local,1,MPI_DOUBLE,0,d,MPI_COMM_WORLD);
-				 if (d >  corpus->num_docs - 5) printf("**** source %d  sent****\n",d);
+				MPI_Send(&gamma_local,1,MPI_DOUBLE,0, d, MPI_COMM_WORLD);
+                if (d >  corpus->num_docs - 5) printf("**** source %d  sent****\n",d);
 			}
 		}
 		else
 		{
-			  //for (d = corpus->num_docs/nproc-1; d < corpus->num_docs; d++) // num_docs -num_docs/nproc
-			  for (d = (corpus->num_docs-1)/nproc + 1; d < corpus->num_docs; d++) // num_docs -num_docs/nproc
-			  {
-				MPI_Status status;
+            for (d=0 ; d < corpus->num_docs; d++) {
 
-				  MPI_Recv(&gamma_global,1,MPI_DOUBLE,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
-				  if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n",status.MPI_TAG);
-				  var_gamma[status.MPI_TAG][k] = gamma_global;
-			  }
-			for (d = myid; d < corpus->num_docs; d += nproc)
-			{
-				//printf("**** document %d  local****\n", d);
-				//MPI_Request request;
-				gamma_local = var_gamma_local[d][k];
-				var_gamma[d][k] = gamma_local;
-			}
+                if (d % nproc != 0)  // these documents were handled on other workers and must be gathered
+                {
+                    MPI_Status status;
+                    MPI_Recv(&gamma_global, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                    if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n", status.MPI_TAG);
+                    var_gamma[status.MPI_TAG][k] = gamma_global;
+                }
+                else
+                {
+                    gamma_local = var_gamma_local[d][k];
+                    var_gamma[d][k] = gamma_local;
+                }
+            }
 
 		}
 		if (myid < 1) printf("*****%d hit barrier*****\n",myid);
