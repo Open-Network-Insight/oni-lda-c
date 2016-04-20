@@ -441,7 +441,6 @@ int read_machinefile(char* filename)
     pFile = fopen(filename, "rt");
     while(fgets(line, LINE_SIZE, pFile) != NULL)
     {
-        printf("%s\n", line);
         hostName = strtok(line,":");
         processCountAtHost = atoi(strtok(NULL,":"));
         processCount += processCountAtHost;
@@ -449,7 +448,7 @@ int read_machinefile(char* filename)
 
     fclose(pFile);
 
-    printf("LDA:  Gonna rock this corpus with %d worker processes of raw topic discovery power!\n", processCount);
+    printf("LDA:  Gonna rock this corpus with %d worker processes of raw topic discovery power!!!\n", processCount);
     return processCount;
 }
 
@@ -529,7 +528,6 @@ int main(int argc, char* argv[])
     {
         if (strcmp(argv[OPERATION_ARG], "est")==0)
         {
-            printf("Beginning LDA model estimation.\n\n");
             INITIAL_ALPHA = atof(argv[ALPHA_ARG]);
             NTOPICS = atoi(argv[NTOPICS_ARG]);
             //should read alpha in as a vector instead of from args
