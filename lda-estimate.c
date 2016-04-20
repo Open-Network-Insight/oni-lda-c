@@ -438,10 +438,12 @@ int read_machinefile(char* filename)
     int processCountAtHost = 0;
     int processCount = 0;
 
-    pFile = fopen(filename, "r");
+    printf("READING THE MACHINEFILE\n")
+    pFile = fopen(filename, "rt");
     while(fgets(line, LINE_SIZE, pFile) != NULL)
     {
-        fscanf (line, "%s:%d\n", &hostNameBuffer[0], &processCountAtHost);
+        printf("%s\n", line)
+        sscanf (line, "%s:%d", &hostNameBuffer[0], &processCountAtHost);
         processCount += processCountAtHost;
     }
 
@@ -532,11 +534,11 @@ int main(int argc, char* argv[])
             //should read alpha in as a vector instead of from args
             read_settings(argv[SETTINGS_PATH_ARG]);
             int nproc = read_machinefile(argv[MACHINEFILE_PATH_ARG]);
-            corpus = read_data(argv[DATA_PATH_ARG]);
-            make_directory(argv[OUPUTDIR_PATH_ARG]);
+            //corpus = read_data(argv[DATA_PATH_ARG]);
+            //make_directory(argv[OUPUTDIR_PATH_ARG]);
             MPI_Init(&argc, &argv);
 
-            run_em(argv[INITIALIZATION_ARG], argv[OUPUTDIR_PATH_ARG], corpus, nproc);
+            //run_em(argv[INITIALIZATION_ARG], argv[OUPUTDIR_PATH_ARG], corpus, nproc);
             MPI_Finalize();
         }
         if (strcmp(argv[OPERATION_ARG], "inf")==0)
