@@ -109,7 +109,7 @@ void save_gamma(char* filename, double** gamma, int num_docs, int num_topics)
  *
  */
 
-void run_em(char* start, char* directory, corpus* corpus)
+void run_em(char* start, char* directory, corpus* corpus, int const nproc)
 {
 
     int d, k, n;
@@ -135,11 +135,11 @@ void run_em(char* start, char* directory, corpus* corpus)
 	//wordp = malloc(sizeof(double)*(5));
 	//wordp_local = malloc(sizeof(double)*(5));
 
-	for (n = 0; n < 5; n++)
-	{
-		wordp[n] = 0.0;
-		wordp_local[n] = 0.0;
-}
+    for (n = 0; n < 5; n++)
+    {
+        wordp[n] = 0.0;
+        wordp_local[n] = 0.0;
+    }
 
 
     // initialize model
@@ -186,10 +186,6 @@ void run_em(char* start, char* directory, corpus* corpus)
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 	MPI_Comm_size(MPI_COMM_WORLD, &pnum);
-
-	int wkr = 4;
-	int wproc = 5;
-	int nproc = wkr*wproc; //14 * 9
 
     while (((converged < 0) || (converged > EM_CONVERGED) || (i <= 2)) && (i <= EM_MAX_ITER))
     {
@@ -426,6 +422,35 @@ void read_settings(char* filename)
 }
 
 
+/*
+ * Get number of processes by reading machinefile.
+ *
+ */
+
+int read_machinefile(char* filename)
+{
+    FILE* pFile;
+
+    const int LINE_SIZE = 256;
+    char line[LINE_SIZE];
+
+    char hostNameBuffer[LINE_SIZE];
+    int processCountAtHost = 0;
+    int processCount = 0;
+
+    pFile = fopen(filename, "r");
+    while(fgets(line, LINE_SIZE, pFile) != NULL)
+    {
+        sscanf (line, "%s:%d", &hostNameBuffer[0], &processCountAtHost);
+        processCount += processCountAtHost;
+    }
+
+    fclose(pFile);
+
+    printf("LDA:  Gonna rock this corpus with %d worker processes of raw topic discovery power!\n", processCount);
+    return processCount;
+}
+
 
 /*
  * inference only
@@ -479,7 +504,16 @@ void infer(char* model_root, char* save, corpus* corpus)
 
 int main(int argc, char* argv[])
 {
-    // (est / inf) alpha k settings data (random / seed/ model) (directory / out)
+    // (est / inf) alpha k settings machinefile data (random / seed/ model) (directory / out)
+
+    const int OPERATION_ARG = 1;
+    const int ALPHA_ARG = 2;
+    const int NTOPICS_ARG = 3;
+    const int SETTINGS_PATH_ARG = 4;
+    const int MACHINEFILE_PATH_ARG = 5;
+    const int DATA_PATH_ARG = 6;
+    const int INITIALIZATION_ARG = 7;
+    const int OUPUTDIR_PATH_ARG = 8;
 
 
     corpus* corpus;
@@ -491,25 +525,26 @@ int main(int argc, char* argv[])
 
     if (argc > 1)
     {
-        if (strcmp(argv[1], "est")==0)
+        if (strcmp(argv[OPERATION_ARG], "est")==0)
         {
-            INITIAL_ALPHA = atof(argv[2]);
-            NTOPICS = atoi(argv[3]);
+            INITIAL_ALPHA = atof(argv[ALPHA_ARG]);
+            NTOPICS = atoi(argv[NTOPICS_ARG]);
             //should read alpha in as a vector instead of from args
-            read_settings(argv[4]);
-            corpus = read_data(argv[5]);
-            make_directory(argv[7]);
+            read_settings(argv[SETTINGS_PATH_ARG]);
+            int nproc = read_machinefile(argv[MACHINEFILE_PATH_ARG]);
+            corpus = read_data(argv[DATA_PATH_ARG]);
+            make_directory(argv[OUPUTDIR_PATH_ARG]);
             MPI_Init(&argc, &argv);
 
-            run_em(argv[6], argv[7], corpus);
+            run_em(argv[INITIALIZATION_ARG], argv[OUPUTDIR_PATH_ARG], corpus, nproc);
             MPI_Finalize();
         }
-        if (strcmp(argv[1], "inf")==0)
+        if (strcmp(argv[OPERATION_ARG], "inf")==0)
         {
-            read_settings(argv[2]);
-            corpus = read_data(argv[4]);
+            read_settings(argv[ALPHA_ARG]);
+            corpus = read_data(argv[DATA_PATH_ARG]);
             MPI_Init(&argc, &argv);
-            infer(argv[3], argv[5], corpus);
+            infer(argv[NTOPICS_ARG], argv[DATA_PATH_ARG], corpus);
             MPI_Finalize();
         }
     }
