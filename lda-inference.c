@@ -18,14 +18,15 @@
 // USA
 
 #include "lda-inference.h"
-
+#include "settings.h"
 /*
  * variational inference
  *
  */
 
-double lda_inference(document* doc, lda_model* model, double* var_gamma, double** phi)
+double lda_inference(document* doc, lda_model* model, double* var_gamma, double** phi, int VAR_MAX_ITER, float VAR_CONVERGED)
 {
+
     double converged = 1;
     double phisum = 0, likelihood = 0;
     double likelihood_old = 0, oldphi[model->num_topics];

@@ -8,8 +8,11 @@
 #include "lda-alpha.h"
 #include "cokus.h"
 
-#define myrand() (double) (((unsigned long) randomMT()) / 4294967296.)
-#define NUM_INIT 1
+static inline double myrand() {
+    return (((unsigned long) randomMT()) / 4294967296.0);
+}
+
+static const int NUM_INIT = 1;
 
 void free_lda_model(lda_model*);
 void save_lda_model(lda_model*, char*);

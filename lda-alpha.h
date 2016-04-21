@@ -8,8 +8,8 @@
 #include "lda.h"
 #include "utils.h"
 
-#define NEWTON_THRESH 1e-5
-#define MAX_ALPHA_ITER 1000
+static const double NEWTON_THRESH = 1e-5;
+static const int MAX_ALPHA_ITER = 1000;
 
 double alhood(double a, double ss, int D, int K);
 double d_alhood(double a, double ss, int D, int K);

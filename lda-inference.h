@@ -6,11 +6,8 @@
 #include <assert.h>
 #include "lda.h"
 #include "utils.h"
-
-float VAR_CONVERGED;
-int VAR_MAX_ITER;
-
-double lda_inference(document*, lda_model*, double*, double**);
+#include "settings.h"
+double lda_inference(document*, lda_model*, double*, double**, int VAR_MAX_ITER, float VAR_CONVERGED);
 double compute_likelihood(document*, lda_model*, double**, double*);
 
 #endif

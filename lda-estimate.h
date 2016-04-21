@@ -15,20 +15,15 @@
 #include "lda-alpha.h"
 #include "utils.h"
 #include "cokus.h"
-
-int LAG = 5;
-
-float EM_CONVERGED;
-int EM_MAX_ITER;
-int ESTIMATE_ALPHA;
-double INITIAL_ALPHA;
-int NTOPICS;
+#include "settings.h"
 
 double doc_e_step(document* doc,
                   double* gamma,
                   double** phi,
                   lda_model* model,
-                  lda_suffstats* ss);
+                  lda_suffstats* ss,
+                  int VAR_MAX_ITER,
+                  float VAR_CONVERGED);
 
 void save_gamma(char* filename,
                 double** gamma,
@@ -38,13 +33,15 @@ void save_gamma(char* filename,
 void run_em(char* start,
             char* directory,
             corpus* corpus,
-            int const nproc);
+            int const nproc,
+            const Settings settings
+);
 
-void read_settings(char* filename);
 
 void infer(char* model_root,
            char* save,
-           corpus* corpus);
+           corpus* corpus,
+           const Settings settings);
 
 #endif
 
