@@ -335,41 +335,38 @@ void run_em(char* start, char* directory, corpus* corpus)
     save_lda_model(model, filename);
     sprintf(filename,"%s/final.gamma",directory);
     // gather gammas across workers
-	for (k = 0; k < model->num_topics; k++)
-	{
-		if (myid < 1) printf("**** saving gamma matrix topic %d , %d ****\n", k,myid);
-		if (myid > 0)
-		{
-			for (d = myid; d < corpus->num_docs; d += nproc)
-			{
-				//MPI_Request request;
-				gamma_local = var_gamma_local[d][k];
-				MPI_Send(&gamma_local,1,MPI_DOUBLE,0,d,MPI_COMM_WORLD);
-				 if (d >  corpus->num_docs - 5) printf("**** source %d  sent****\n",d);
-			}
-		}
-		else
-		{
-			  //for (d = corpus->num_docs/nproc-1; d < corpus->num_docs; d++) // num_docs -num_docs/nproc
-			  for (d = (corpus->num_docs-1)/nproc + 1; d < corpus->num_docs; d++) // num_docs -num_docs/nproc
-			  {
-				MPI_Status status;
-
-				  MPI_Recv(&gamma_global,1,MPI_DOUBLE,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
-				  if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n",status.MPI_TAG);
-				  var_gamma[status.MPI_TAG][k] = gamma_global;
-			  }
-			for (d = myid; d < corpus->num_docs; d += nproc)
-			{
-				//printf("**** document %d  local****\n", d);
-				//MPI_Request request;
-				gamma_local = var_gamma_local[d][k];
-				var_gamma[d][k] = gamma_local;
-			}
-
-		}
-		if (myid < 1) printf("*****%d hit barrier*****\n",myid);
-		MPI_Barrier(MPI_COMM_WORLD);
+    for (k = 0; k < model->num_topics; k++)
+    {
+        if (myid == 0) printf("**** saving gamma matrix topic %d  ****\n", k);
+        if (myid > 0)
+        {
+            for (d = myid; d < corpus->num_docs; d += nproc)
+            {
+                //MPI_Request request;
+                gamma_local = var_gamma_local[d][k];
+                MPI_Send(&gamma_local,1,MPI_DOUBLE,0, d, MPI_COMM_WORLD);
+                if (d >  corpus->num_docs - 5) printf("**** source %d  sent****\n",d);
+            }
+        }
+        else
+        {
+            for (d=0 ; d < corpus->num_docs; d++) {
+                if (d % nproc != 0)  // these documents were handled on other workers and must be gathered
+                {
+                    MPI_Status status;
+                    MPI_Recv(&gamma_global, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                    if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n", status.MPI_TAG);
+                    var_gamma[status.MPI_TAG][k] = gamma_global;
+                }
+                else
+                {
+                    gamma_local = var_gamma_local[d][k];
+                    var_gamma[d][k] = gamma_local;
+                }
+            }
+        }
+        if (myid < 1) printf("*****%d hit barrier*****\n",myid);
+        MPI_Barrier(MPI_COMM_WORLD);
 
 	}
 	// only the first worker on each machine should do this!
