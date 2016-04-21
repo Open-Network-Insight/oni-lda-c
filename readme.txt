@@ -81,7 +81,7 @@ B. TOPIC ESTIMATION
 
 Estimate the model by executing:
 
-     lda est [alpha] [k] [settings] [data] [random/seeded/*] [directory]
+lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory]
 
 The term [random/seeded/*] > describes how the topics will be
 initialized.  "Random" initializes each topic randomly; "seeded"
@@ -109,6 +109,8 @@ The saved models are in two files:
 The variational posterior Dirichlets are in:
 
      <iteration>.gamma
+
+The # of processes argument is the numer of worker processes used by MPI.
 
 The settings file and data format are described below.
 

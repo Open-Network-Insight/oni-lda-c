@@ -109,7 +109,7 @@ void save_gamma(char* filename, double** gamma, int num_docs, int num_topics)
  *
  */
 
-void run_em(char* start, char* directory, corpus* corpus)
+void run_em(char* start, char* directory, corpus* corpus, int nproc)
 {
 
     int d, k, n;
@@ -135,11 +135,11 @@ void run_em(char* start, char* directory, corpus* corpus)
 	//wordp = malloc(sizeof(double)*(5));
 	//wordp_local = malloc(sizeof(double)*(5));
 
-	for (n = 0; n < 5; n++)
-	{
-		wordp[n] = 0.0;
-		wordp_local[n] = 0.0;
-}
+    for (n = 0; n < corpus->num_terms; n++)
+    {
+        wordp[n] = 0.0;
+        wordp_local[n] = 0.0;
+    }
 
 
     // initialize model
@@ -186,10 +186,6 @@ void run_em(char* start, char* directory, corpus* corpus)
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 	MPI_Comm_size(MPI_COMM_WORLD, &pnum);
-
-	int wkr = 4;
-	int wproc = 5;
-	int nproc = wkr*wproc; //14 * 9
 
     while (((converged < 0) || (converged > EM_CONVERGED) || (i <= 2)) && (i <= EM_MAX_ITER))
     {
@@ -426,7 +422,6 @@ void read_settings(char* filename)
 }
 
 
-
 /*
  * inference only
  *
@@ -479,8 +474,12 @@ void infer(char* model_root, char* save, corpus* corpus)
 
 int main(int argc, char* argv[])
 {
-    // (est / inf) alpha k settings data (random / seed/ model) (directory / out)
+    // (est / inf) alpha k settings machinefile data (random / seed/ model) (directory / out)
 
+    const int OPERATION_ARG = 1;
+
+
+    const char* operation = argv[OPERATION_ARG];
 
     corpus* corpus;
 
@@ -491,32 +490,53 @@ int main(int argc, char* argv[])
 
     if (argc > 1)
     {
-        if (strcmp(argv[1], "est")==0)
+        if (strcmp(operation, "est")==0)
         {
-            INITIAL_ALPHA = atof(argv[2]);
-            NTOPICS = atoi(argv[3]);
-            //should read alpha in as a vector instead of from args
-            read_settings(argv[4]);
-            corpus = read_data(argv[5]);
-            make_directory(argv[7]);
-            MPI_Init(&argc, &argv);
+            // usage: lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory]
 
-            run_em(argv[6], argv[7], corpus);
+            float alpha = atof(argv[2]); //should read alpha in as a vector instead of from args
+            int ntopics = atoi(argv[3]);
+            char* settings_path = argv[4];
+            int nproc = atoi(argv[5]);
+            char* corpus_path = argv[6];
+            char* initialization_option = argv[7];
+            char* output_directory = argv[8];
+
+
+            NTOPICS = ntopics; // TODO: get rid of global non-constants
+            INITIAL_ALPHA = alpha; // TODO: get rid of global non-constants
+
+            read_settings(settings_path);
+            corpus = read_data(corpus_path);
+            make_directory(output_directory);
+
+            MPI_Init(&argc, &argv);
+            run_em(initialization_option, output_directory, corpus, nproc);
             MPI_Finalize();
         }
-        if (strcmp(argv[1], "inf")==0)
+        if (strcmp(operation, "inf")==0)
         {
-            read_settings(argv[2]);
-            corpus = read_data(argv[4]);
+
+            // usage: lda inf [settings] [model] [data] [output filename]
+
+            char* settings_path = argv[2];
+            char* model_path = argv[3];
+            char* corpus_path = argv[4];
+            char* output_name = argv[5];
+
+
+            read_settings(settings_path);
+            corpus = read_data(corpus_path);
+
             MPI_Init(&argc, &argv);
-            infer(argv[3], argv[5], corpus);
+            infer(model_path, output_name, corpus);
             MPI_Finalize();
         }
     }
     else
     {
-        printf("usage : lda est [initial alpha] [k] [settings] [data] [random/seeded/*] [directory]\n");
-        printf("        lda inf [settings] [model] [data] [name]\n");
+        printf("usage : lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory]\n");
+        printf("        lda inf [settings] [model] [data] [output filename]\n");
     }
     return(0);
 }
