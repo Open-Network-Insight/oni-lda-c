@@ -109,7 +109,7 @@ void save_gamma(char* filename, double** gamma, int num_docs, int num_topics)
  *
  */
 
-void run_em(char* start, char* directory, corpus* corpus, int const nproc)
+void run_em(char* start, char* directory, corpus* corpus, int nproc)
 {
 
     int d, k, n;
@@ -135,7 +135,7 @@ void run_em(char* start, char* directory, corpus* corpus, int const nproc)
 	//wordp = malloc(sizeof(double)*(5));
 	//wordp_local = malloc(sizeof(double)*(5));
 
-    for (n = 0; n < 5; n++)
+    for (n = 0; n < corpus->num_terms; n++)
     {
         wordp[n] = 0.0;
         wordp_local[n] = 0.0;
@@ -423,37 +423,6 @@ void read_settings(char* filename)
 
 
 /*
- * Get number of processes by reading machinefile.
- *
- */
-
-int read_machinefile(char* filename)
-{
-    FILE* pFile;
-
-    const int LINE_SIZE = 256;
-    char line[LINE_SIZE];
-
-    char* hostName;
-    int processCountAtHost = 0;
-    int processCount = 0;
-
-    pFile = fopen(filename, "rt");
-    while(fgets(line, LINE_SIZE, pFile) != NULL)
-    {
-        hostName = strtok(line,":");
-        processCountAtHost = atoi(strtok(NULL,":"));
-        processCount += processCountAtHost;
-    }
-
-    fclose(pFile);
-
-    printf("LDA:  Gonna rock this corpus with %d worker processes of raw topic discovery power!!!\n", processCount);
-    return processCount;
-}
-
-
-/*
  * inference only
  *
  */
@@ -508,14 +477,9 @@ int main(int argc, char* argv[])
     // (est / inf) alpha k settings machinefile data (random / seed/ model) (directory / out)
 
     const int OPERATION_ARG = 1;
-    const int ALPHA_ARG = 2;
-    const int NTOPICS_ARG = 3;
-    const int SETTINGS_PATH_ARG = 4;
-    const int MACHINEFILE_PATH_ARG = 5;
-    const int DATA_PATH_ARG = 6;
-    const int INITIALIZATION_ARG = 7;
-    const int OUPUTDIR_PATH_ARG = 8;
 
+
+    const char* operation = argv[OPERATION_ARG];
 
     corpus* corpus;
 
@@ -526,33 +490,50 @@ int main(int argc, char* argv[])
 
     if (argc > 1)
     {
-        if (strcmp(argv[OPERATION_ARG], "est")==0)
+        if (strcmp(operation, "est")==0)
         {
-            INITIAL_ALPHA = atof(argv[ALPHA_ARG]);
-            NTOPICS = atoi(argv[NTOPICS_ARG]);
-            //should read alpha in as a vector instead of from args
-            read_settings(argv[SETTINGS_PATH_ARG]);
-            int nproc = read_machinefile(argv[MACHINEFILE_PATH_ARG]);
-            corpus = read_data(argv[DATA_PATH_ARG]);
-            make_directory(argv[OUPUTDIR_PATH_ARG]);
-            MPI_Init(&argc, &argv);
+            // usage: lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory]
 
-            run_em(argv[INITIALIZATION_ARG], argv[OUPUTDIR_PATH_ARG], corpus, nproc);
+            float alpha = atof(argv[2]); //should read alpha in as a vector instead of from args
+            int ntopics = atoi(argv[3]);
+            char* settings_path = argv[4];
+            int nproc = atoi(argv[5]);
+            char* corpus_path = argv[6];
+            char* initialization_option = argv[7];
+            char* output_directory = argv[8];
+
+
+            read_settings(settings_path);
+            corpus = read_data(corpus_path);
+            make_directory(output_directory);
+
+            MPI_Init(&argc, &argv);
+            run_em(initialization_option, output_directory, corpus, nproc);
             MPI_Finalize();
         }
-        if (strcmp(argv[OPERATION_ARG], "inf")==0)
+        if (strcmp(operation, "inf")==0)
         {
-            read_settings(argv[ALPHA_ARG]);
-            corpus = read_data(argv[DATA_PATH_ARG]);
+
+            // usage: lda inf [settings] [model] [data] [output filename]
+
+            char* settings_path = argv[2];
+            char* model_path = argv[3];
+            char* corpus_path = argv[4];
+            char* output_name = argv[5];
+
+
+            read_settings(settings_path);
+            corpus = read_data(corpus_path);
+
             MPI_Init(&argc, &argv);
-            infer(argv[NTOPICS_ARG], argv[DATA_PATH_ARG], corpus);
+            infer(model_path, output_name, corpus);
             MPI_Finalize();
         }
     }
     else
     {
-        printf("usage : lda est [initial alpha] [k] [settings] [machinefile] [data] [random/seeded/*] [directory]\n");
-        printf("        lda inf [settings] [machinefile] [model] [data] [name]\n");
+        printf("usage : lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory]\n");
+        printf("        lda inf [settings] [model] [data] [output filename]\n");
     }
     return(0);
 }
