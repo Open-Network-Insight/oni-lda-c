@@ -20,20 +20,21 @@
 #include "lda-estimate.h"
 #include "mpi.h"
 #include "stdlib.h"
+#include "settings.h"
 /*
  * perform inference on a document and update sufficient statistics
  *
  */
 
 double doc_e_step(document* doc, double* gamma, double** phi,
-                  lda_model* model, lda_suffstats* ss)
+                  lda_model* model, lda_suffstats* ss, const Settings settings)
 {
     double likelihood;
     int n, k;
 
     // posterior inference
 
-    likelihood = lda_inference(doc, model, gamma, phi);
+    likelihood = lda_inference(doc, model, gamma, phi, settings);
 
     // update sufficient statistics
 
@@ -109,8 +110,15 @@ void save_gamma(char* filename, double** gamma, int num_docs, int num_topics)
  *
  */
 
-void run_em(char* start, char* directory, corpus* corpus, int nproc)
+void run_em(char* start, char* directory, corpus* corpus, int nproc, const Settings settings)
 {
+
+    int NTOPICS = settings.NTOPICS;
+    double INITIAL_ALPHA = settings.INITIAL_ALPHA;
+    float EM_CONVERGED = settings.EM_CONVERGED;
+    float EM_MAX_ITER = settings.EM_MAX_ITER;
+    int VAR_MAX_ITER = settings.VAR_MAX_ITER;
+    int ESTIMATE_ALPHA = settings.ESTIMATE_ALPHA;
 
     int d, k, n;
     lda_model *model = NULL;
@@ -212,7 +220,8 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
                                      var_gamma_local[d],
                                      phi,
                                      model,
-                                     ss_local);
+                                     ss_local,
+                                           settings);
              //if (d >  corpus->num_docs- 10) printf("**** doc %d  processed****\n",d);
         }
         // may need to do the same thing with sufficient stats
@@ -396,38 +405,11 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
 
 
 /*
- * read settings.
- *
- */
-
-void read_settings(char* filename)
-{
-    FILE* fileptr;
-    char alpha_action[100];
-    fileptr = fopen(filename, "r");
-    fscanf(fileptr, "var max iter %d\n", &VAR_MAX_ITER);
-    fscanf(fileptr, "var convergence %f\n", &VAR_CONVERGED);
-    fscanf(fileptr, "em max iter %d\n", &EM_MAX_ITER);
-    fscanf(fileptr, "em convergence %f\n", &EM_CONVERGED);
-    fscanf(fileptr, "alpha %s", alpha_action);
-    if (strcmp(alpha_action, "fixed")==0)
-    {
-	ESTIMATE_ALPHA = 0;
-    }
-    else
-    {
-	ESTIMATE_ALPHA = 1;
-    }
-    fclose(fileptr);
-}
-
-
-/*
  * inference only
  *
  */
 
-void infer(char* model_root, char* save, corpus* corpus)
+void infer(char* model_root, char* save, corpus* corpus, const Settings settings)
 {
     FILE* fileptr;
     char filename[100];
@@ -450,7 +432,7 @@ void infer(char* model_root, char* save, corpus* corpus)
 	phi = (double**) malloc(sizeof(double*) * doc->length);
 	for (n = 0; n < doc->length; n++)
 	    phi[n] = (double*) malloc(sizeof(double) * model->num_topics);
-	likelihood = lda_inference(doc, model, var_gamma[d], phi);
+	likelihood = lda_inference(doc, model, var_gamma[d], phi, settings);
 
 	fprintf(fileptr, "%5.5f\n", likelihood);
     }
@@ -488,13 +470,15 @@ int main(int argc, char* argv[])
     seedMT(t1);
     // seedMT(4357U);
 
+    Settings* pSettings = (Settings*) malloc(sizeof(Settings));
+
     if (argc > 1)
     {
         if (strcmp(operation, "est")==0)
         {
             // usage: lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory]
 
-            float alpha = atof(argv[2]); //should read alpha in as a vector instead of from args
+            double alpha = atof(argv[2]); //should read alpha in as a vector instead of from args
             int ntopics = atoi(argv[3]);
             char* settings_path = argv[4];
             int nproc = atoi(argv[5]);
@@ -503,20 +487,21 @@ int main(int argc, char* argv[])
             char* output_directory = argv[8];
 
 
-            NTOPICS = ntopics; // TODO: get rid of global non-constants
-            INITIAL_ALPHA = alpha; // TODO: get rid of global non-constants
+            // some settings are read from file, some from the command line
 
-            read_settings(settings_path);
+            pSettings  = read_settings(settings_path);
+            pSettings->INITIAL_ALPHA = alpha;
+            pSettings->NTOPICS = ntopics;
+
             corpus = read_data(corpus_path);
             make_directory(output_directory);
 
             MPI_Init(&argc, &argv);
-            run_em(initialization_option, output_directory, corpus, nproc);
+            run_em(initialization_option, output_directory, corpus, nproc, *pSettings);
             MPI_Finalize();
         }
         if (strcmp(operation, "inf")==0)
         {
-
             // usage: lda inf [settings] [model] [data] [output filename]
 
             char* settings_path = argv[2];
@@ -524,14 +509,15 @@ int main(int argc, char* argv[])
             char* corpus_path = argv[4];
             char* output_name = argv[5];
 
-
             read_settings(settings_path);
             corpus = read_data(corpus_path);
 
             MPI_Init(&argc, &argv);
-            infer(model_path, output_name, corpus);
+            infer(model_path, output_name, corpus, *pSettings);
             MPI_Finalize();
         }
+
+        free (pSettings);
     }
     else
     {

@@ -6,7 +6,7 @@
 
 #include "lda.h"
 
-#define OFFSET 0;                  // offset for reading data
+static const int OFFSET = 0;  // offset for reading data
 
 corpus* read_data(char* data_filename);
 int max_corpus_length(corpus* c);
