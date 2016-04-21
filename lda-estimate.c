@@ -109,7 +109,7 @@ void save_gamma(char* filename, double** gamma, int num_docs, int num_topics)
  *
  */
 
-void run_em(char* start, char* directory, corpus* corpus)
+void run_em(char* start, char* directory, corpus* corpus, int const nproc)
 {
 
     int d, k, n;
@@ -135,11 +135,11 @@ void run_em(char* start, char* directory, corpus* corpus)
 	//wordp = malloc(sizeof(double)*(5));
 	//wordp_local = malloc(sizeof(double)*(5));
 
-	for (n = 0; n < 5; n++)
-	{
-		wordp[n] = 0.0;
-		wordp_local[n] = 0.0;
-}
+    for (n = 0; n < 5; n++)
+    {
+        wordp[n] = 0.0;
+        wordp_local[n] = 0.0;
+    }
 
 
     // initialize model
@@ -186,10 +186,6 @@ void run_em(char* start, char* directory, corpus* corpus)
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 	MPI_Comm_size(MPI_COMM_WORLD, &pnum);
-
-	int wkr = 4;
-	int wproc = 5;
-	int nproc = wkr*wproc; //14 * 9
 
     while (((converged < 0) || (converged > EM_CONVERGED) || (i <= 2)) && (i <= EM_MAX_ITER))
     {
@@ -335,41 +331,38 @@ void run_em(char* start, char* directory, corpus* corpus)
     save_lda_model(model, filename);
     sprintf(filename,"%s/final.gamma",directory);
     // gather gammas across workers
-	for (k = 0; k < model->num_topics; k++)
-	{
-		if (myid < 1) printf("**** saving gamma matrix topic %d , %d ****\n", k,myid);
-		if (myid > 0)
-		{
-			for (d = myid; d < corpus->num_docs; d += nproc)
-			{
-				//MPI_Request request;
-				gamma_local = var_gamma_local[d][k];
-				MPI_Send(&gamma_local,1,MPI_DOUBLE,0,d,MPI_COMM_WORLD);
-				 if (d >  corpus->num_docs - 5) printf("**** source %d  sent****\n",d);
-			}
-		}
-		else
-		{
-			  //for (d = corpus->num_docs/nproc-1; d < corpus->num_docs; d++) // num_docs -num_docs/nproc
-			  for (d = (corpus->num_docs-1)/nproc + 1; d < corpus->num_docs; d++) // num_docs -num_docs/nproc
-			  {
-				MPI_Status status;
-
-				  MPI_Recv(&gamma_global,1,MPI_DOUBLE,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
-				  if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n",status.MPI_TAG);
-				  var_gamma[status.MPI_TAG][k] = gamma_global;
-			  }
-			for (d = myid; d < corpus->num_docs; d += nproc)
-			{
-				//printf("**** document %d  local****\n", d);
-				//MPI_Request request;
-				gamma_local = var_gamma_local[d][k];
-				var_gamma[d][k] = gamma_local;
-			}
-
-		}
-		if (myid < 1) printf("*****%d hit barrier*****\n",myid);
-		MPI_Barrier(MPI_COMM_WORLD);
+    for (k = 0; k < model->num_topics; k++)
+    {
+        if (myid == 0) printf("**** saving gamma matrix topic %d  ****\n", k);
+        if (myid > 0)
+        {
+            for (d = myid; d < corpus->num_docs; d += nproc)
+            {
+                //MPI_Request request;
+                gamma_local = var_gamma_local[d][k];
+                MPI_Send(&gamma_local,1,MPI_DOUBLE,0, d, MPI_COMM_WORLD);
+                if (d >  corpus->num_docs - 5) printf("**** source %d  sent****\n",d);
+            }
+        }
+        else
+        {
+            for (d=0 ; d < corpus->num_docs; d++) {
+                if (d % nproc != 0)  // these documents were handled on other workers and must be gathered
+                {
+                    MPI_Status status;
+                    MPI_Recv(&gamma_global, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                    if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n", status.MPI_TAG);
+                    var_gamma[status.MPI_TAG][k] = gamma_global;
+                }
+                else
+                {
+                    gamma_local = var_gamma_local[d][k];
+                    var_gamma[d][k] = gamma_local;
+                }
+            }
+        }
+        if (myid < 1) printf("*****%d hit barrier*****\n",myid);
+        MPI_Barrier(MPI_COMM_WORLD);
 
 	}
 	// only the first worker on each machine should do this!
@@ -429,6 +422,36 @@ void read_settings(char* filename)
 }
 
 
+/*
+ * Get number of processes by reading machinefile.
+ *
+ */
+
+int read_machinefile(char* filename)
+{
+    FILE* pFile;
+
+    const int LINE_SIZE = 256;
+    char line[LINE_SIZE];
+
+    char* hostName;
+    int processCountAtHost = 0;
+    int processCount = 0;
+
+    pFile = fopen(filename, "rt");
+    while(fgets(line, LINE_SIZE, pFile) != NULL)
+    {
+        hostName = strtok(line,":");
+        processCountAtHost = atoi(strtok(NULL,":"));
+        processCount += processCountAtHost;
+    }
+
+    fclose(pFile);
+
+    printf("LDA:  Gonna rock this corpus with %d worker processes of raw topic discovery power!!!\n", processCount);
+    return processCount;
+}
+
 
 /*
  * inference only
@@ -482,7 +505,16 @@ void infer(char* model_root, char* save, corpus* corpus)
 
 int main(int argc, char* argv[])
 {
-    // (est / inf) alpha k settings data (random / seed/ model) (directory / out)
+    // (est / inf) alpha k settings machinefile data (random / seed/ model) (directory / out)
+
+    const int OPERATION_ARG = 1;
+    const int ALPHA_ARG = 2;
+    const int NTOPICS_ARG = 3;
+    const int SETTINGS_PATH_ARG = 4;
+    const int MACHINEFILE_PATH_ARG = 5;
+    const int DATA_PATH_ARG = 6;
+    const int INITIALIZATION_ARG = 7;
+    const int OUPUTDIR_PATH_ARG = 8;
 
 
     corpus* corpus;
@@ -494,32 +526,33 @@ int main(int argc, char* argv[])
 
     if (argc > 1)
     {
-        if (strcmp(argv[1], "est")==0)
+        if (strcmp(argv[OPERATION_ARG], "est")==0)
         {
-            INITIAL_ALPHA = atof(argv[2]);
-            NTOPICS = atoi(argv[3]);
+            INITIAL_ALPHA = atof(argv[ALPHA_ARG]);
+            NTOPICS = atoi(argv[NTOPICS_ARG]);
             //should read alpha in as a vector instead of from args
-            read_settings(argv[4]);
-            corpus = read_data(argv[5]);
-            make_directory(argv[7]);
+            read_settings(argv[SETTINGS_PATH_ARG]);
+            int nproc = read_machinefile(argv[MACHINEFILE_PATH_ARG]);
+            corpus = read_data(argv[DATA_PATH_ARG]);
+            make_directory(argv[OUPUTDIR_PATH_ARG]);
             MPI_Init(&argc, &argv);
 
-            run_em(argv[6], argv[7], corpus);
+            run_em(argv[INITIALIZATION_ARG], argv[OUPUTDIR_PATH_ARG], corpus, nproc);
             MPI_Finalize();
         }
-        if (strcmp(argv[1], "inf")==0)
+        if (strcmp(argv[OPERATION_ARG], "inf")==0)
         {
-            read_settings(argv[2]);
-            corpus = read_data(argv[4]);
+            read_settings(argv[ALPHA_ARG]);
+            corpus = read_data(argv[DATA_PATH_ARG]);
             MPI_Init(&argc, &argv);
-            infer(argv[3], argv[5], corpus);
+            infer(argv[NTOPICS_ARG], argv[DATA_PATH_ARG], corpus);
             MPI_Finalize();
         }
     }
     else
     {
-        printf("usage : lda est [initial alpha] [k] [settings] [data] [random/seeded/*] [directory]\n");
-        printf("        lda inf [settings] [model] [data] [name]\n");
+        printf("usage : lda est [initial alpha] [k] [settings] [machinefile] [data] [random/seeded/*] [directory]\n");
+        printf("        lda inf [settings] [machinefile] [model] [data] [name]\n");
     }
     return(0);
 }
