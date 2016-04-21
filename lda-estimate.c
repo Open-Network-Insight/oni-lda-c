@@ -503,6 +503,9 @@ int main(int argc, char* argv[])
             char* output_directory = argv[8];
 
 
+            NTOPICS = ntopics; // TODO: get rid of global non-constants
+            INITIAL_ALPHA = alpha; // TODO: get rid of global non-constants
+
             read_settings(settings_path);
             corpus = read_data(corpus_path);
             make_directory(output_directory);
