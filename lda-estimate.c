@@ -27,14 +27,14 @@
  */
 
 double doc_e_step(document* doc, double* gamma, double** phi,
-                  lda_model* model, lda_suffstats* ss, const Settings settings)
+                  lda_model* model, lda_suffstats* ss, int VAR_MAX_ITER, float VAR_CONVERGED)
 {
     double likelihood;
     int n, k;
 
     // posterior inference
 
-    likelihood = lda_inference(doc, model, gamma, phi, settings);
+    likelihood = lda_inference(doc, model, gamma, phi, VAR_MAX_ITER, VAR_CONVERGED);
 
     // update sufficient statistics
 
@@ -112,33 +112,27 @@ void save_gamma(char* filename, double** gamma, int num_docs, int num_topics)
 
 void run_em(char* start, char* directory, corpus* corpus, int nproc, const Settings settings)
 {
-
-    int NTOPICS = settings.NTOPICS;
-    double INITIAL_ALPHA = settings.INITIAL_ALPHA;
-    float EM_CONVERGED = settings.EM_CONVERGED;
-    float EM_MAX_ITER = settings.EM_MAX_ITER;
-    int VAR_MAX_ITER = settings.VAR_MAX_ITER;
-    int ESTIMATE_ALPHA = settings.ESTIMATE_ALPHA;
-
     int d, k, n;
     lda_model *model = NULL;
     double **var_gamma, **var_gamma_local, **phi;
     double wordp[corpus->num_terms], wordp_local[corpus->num_terms];
 
+    int max_iter = settings.var_max_iterations;
+
     // allocate variational parameters
 
     var_gamma = malloc(sizeof(double*)*(corpus->num_docs));
     for (d = 0; d < corpus->num_docs; d++)
-	var_gamma[d] = malloc(sizeof(double) * NTOPICS);
+	var_gamma[d] = malloc(sizeof(double) * settings.ntopics);
 
     var_gamma_local = malloc(sizeof(double*)*(corpus->num_docs));
     for (d = 0; d < corpus->num_docs; d++)
-	var_gamma_local[d] = malloc(sizeof(double) * NTOPICS);
+	var_gamma_local[d] = malloc(sizeof(double) * settings.ntopics);
 
     int max_length = max_corpus_length(corpus);
     phi = malloc(sizeof(double*)*max_length);
     for (n = 0; n < max_length; n++)
-	phi[n] = malloc(sizeof(double) * NTOPICS);
+	phi[n] = malloc(sizeof(double) * settings.ntopics);
 
 	//wordp = malloc(sizeof(double)*(5));
 	//wordp_local = malloc(sizeof(double)*(5));
@@ -158,19 +152,19 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc, const Setti
     lda_suffstats* ss_local = NULL;
     if (strcmp(start, "seeded")==0)
     {
-        model = new_lda_model(corpus->num_terms, NTOPICS);
+        model = new_lda_model(corpus->num_terms, settings.ntopics);
         ss = new_lda_suffstats(model);
         corpus_initialize_ss(ss, model, corpus);
         lda_mle(model, ss, 0);
-        model->alpha = INITIAL_ALPHA;
+        model->alpha = settings.iniitial_alpha;
     }
     else if (strcmp(start, "random")==0)
     {
-        model = new_lda_model(corpus->num_terms, NTOPICS);
+        model = new_lda_model(corpus->num_terms, settings.ntopics);
         ss = new_lda_suffstats(model);
         random_initialize_ss(ss, model);
         lda_mle(model, ss, 0);
-        model->alpha = INITIAL_ALPHA;
+        model->alpha = settings.iniitial_alpha;
     }
     else
     {
@@ -195,7 +189,7 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc, const Setti
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 	MPI_Comm_size(MPI_COMM_WORLD, &pnum);
 
-    while (((converged < 0) || (converged > EM_CONVERGED) || (i <= 2)) && (i <= EM_MAX_ITER))
+    while (((converged < 0) || (converged > settings.em_converge) || (i <= 2)) && (i <= settings.em_max_iter))
     {
         i++;
         if (myid < 1 ) printf("**** em iteration %d ****\n", i);
@@ -217,11 +211,12 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc, const Setti
         {
             if ((d % 1000000) == 0) printf("document %d\n",d);
             likelihood_local += doc_e_step(&(corpus->docs[d]),
-                                     var_gamma_local[d],
-                                     phi,
-                                     model,
-                                     ss_local,
-                                           settings);
+                                           var_gamma_local[d],
+                                           phi,
+                                           model,
+                                           ss_local,
+                                           settings.var_max_iterations,
+                                           settings.var_converged);
              //if (d >  corpus->num_docs- 10) printf("**** doc %d  processed****\n",d);
         }
         // may need to do the same thing with sufficient stats
@@ -270,18 +265,21 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc, const Setti
 	    if (myid < 1) printf("**** reducing likelihood %10.10f ****\n", likelihood);
         // m-step
 
-        lda_mle(model, ss, ESTIMATE_ALPHA);
+        lda_mle(model, ss, settings.estimate_alpha);
 
         // check for convergence
+        // NOTE: Because likelihood is result of allreduce, all workers agree on the values
+        // of likelihood and likelihood_old at all steps... therefore values of max_iter stay in synch
 
         converged = (likelihood_old - likelihood) / (likelihood_old);
-        if (converged < 0) VAR_MAX_ITER = VAR_MAX_ITER * 2;
+        if (converged < 0) max_iter = max_iter * 2;
         likelihood_old = likelihood;
 
         // output model and likelihood
 
         fprintf(likelihood_file, "%10.10f\t%5.5e\n", likelihood, converged);
         fflush(likelihood_file);
+
         //if ((i % LAG) == 0)
         //{
         //    sprintf(filename,"%s/%03d",directory, i);
@@ -432,7 +430,7 @@ void infer(char* model_root, char* save, corpus* corpus, const Settings settings
 	phi = (double**) malloc(sizeof(double*) * doc->length);
 	for (n = 0; n < doc->length; n++)
 	    phi[n] = (double*) malloc(sizeof(double) * model->num_topics);
-	likelihood = lda_inference(doc, model, var_gamma[d], phi, settings);
+	likelihood = lda_inference(doc, model, var_gamma[d], phi, settings.var_max_iterations, settings.var_converged);
 
 	fprintf(fileptr, "%5.5f\n", likelihood);
     }
@@ -490,8 +488,8 @@ int main(int argc, char* argv[])
             // some settings are read from file, some from the command line
 
             pSettings  = read_settings(settings_path);
-            pSettings->INITIAL_ALPHA = alpha;
-            pSettings->NTOPICS = ntopics;
+            pSettings->iniitial_alpha = alpha;
+            pSettings->ntopics = ntopics;
 
             corpus = read_data(corpus_path);
             make_directory(output_directory);

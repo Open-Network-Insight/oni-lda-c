@@ -3,13 +3,13 @@
 
 typedef struct
 {
-    float EM_CONVERGED;
-    int EM_MAX_ITER;
-    int ESTIMATE_ALPHA;
-    double INITIAL_ALPHA;
-    int NTOPICS;
-    float VAR_CONVERGED;
-    int VAR_MAX_ITER;
+    float em_converge;
+    int em_max_iter;
+    int estimate_alpha;
+    double iniitial_alpha;
+    int ntopics;
+    float var_converged;
+    int var_max_iterations;
 } Settings;
 
 Settings* read_settings(const char* filename);

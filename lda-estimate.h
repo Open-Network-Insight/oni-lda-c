@@ -22,7 +22,8 @@ double doc_e_step(document* doc,
                   double** phi,
                   lda_model* model,
                   lda_suffstats* ss,
-                  const Settings settings);
+                  int VAR_MAX_ITER,
+                  float VAR_CONVERGED);
 
 void save_gamma(char* filename,
                 double** gamma,

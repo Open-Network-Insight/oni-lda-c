@@ -12,18 +12,18 @@ Settings* read_settings(const char* filename)
     FILE* fileptr;
     char alpha_action[100];
     fileptr = fopen(filename, "r");
-    fscanf(fileptr, "var max iter %d\n", &pSettings->VAR_MAX_ITER);
-    fscanf(fileptr, "var convergence %f\n", &pSettings->VAR_CONVERGED);
-    fscanf(fileptr, "em max iter %d\n", &pSettings->EM_MAX_ITER);
-    fscanf(fileptr, "em convergence %f\n", &pSettings->EM_CONVERGED);
+    fscanf(fileptr, "var max iter %d\n", &pSettings->var_max_iterations);
+    fscanf(fileptr, "var convergence %f\n", &pSettings->var_converged);
+    fscanf(fileptr, "em max iter %d\n", &pSettings->em_max_iter);
+    fscanf(fileptr, "em convergence %f\n", &pSettings->em_converge);
     fscanf(fileptr, "alpha %s", alpha_action);
     if (strcmp(alpha_action, "fixed")==0)
     {
-        pSettings->ESTIMATE_ALPHA = 0;
+        pSettings->estimate_alpha = 0;
     }
     else
     {
-        pSettings->ESTIMATE_ALPHA = 1;
+        pSettings->estimate_alpha = 1;
     }
     fclose(fileptr);
     return pSettings;
