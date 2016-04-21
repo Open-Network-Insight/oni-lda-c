@@ -24,10 +24,8 @@
  *
  */
 
-double lda_inference(document* doc, lda_model* model, double* var_gamma, double** phi, const Settings settings)
+double lda_inference(document* doc, lda_model* model, double* var_gamma, double** phi, int VAR_MAX_ITER, float VAR_CONVERGED)
 {
-    const int VAR_MAX_ITER = settings.VAR_MAX_ITER;
-    const float VAR_CONVERGED = settings.VAR_CONVERGED;
 
     double converged = 1;
     double phisum = 0, likelihood = 0;
