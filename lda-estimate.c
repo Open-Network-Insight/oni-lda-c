@@ -132,15 +132,11 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
     for (n = 0; n < max_length; n++)
 	phi[n] = malloc(sizeof(double) * NTOPICS);
 
-	//wordp = malloc(sizeof(double)*(5));
-	//wordp_local = malloc(sizeof(double)*(5));
-
     for (n = 0; n < corpus->num_terms; n++)
     {
         wordp[n] = 0.0;
         wordp_local[n] = 0.0;
     }
-
 
     // initialize model
 
@@ -197,13 +193,10 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
         //int min = 0;
         double alphass = 0.0; double alphass_local = 0.0;
         int numdocs = 0.0; int numdocs_local = 0.0;
-        //double wordp = 0.0; double wordp_local = 0.0;
         double wordn = 0.0; double wordn_local = 0.0;
 
         zero_initialize_ss(ss, model);
         ss_local = ss;
-
-		//printf("**** process %d ****\n", myid);
 
         for (d = myid; d < corpus->num_docs; d += nproc)
         {
@@ -213,7 +206,6 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
                                      phi,
                                      model,
                                      ss_local);
-             //if (d >  corpus->num_docs- 10) printf("**** doc %d  processed****\n",d);
         }
         // may need to do the same thing with sufficient stats
         MPI_Barrier(MPI_COMM_WORLD);
@@ -273,55 +265,7 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
 
         fprintf(likelihood_file, "%10.10f\t%5.5e\n", likelihood, converged);
         fflush(likelihood_file);
-        //if ((i % LAG) == 0)
-        //{
-        //    sprintf(filename,"%s/%03d",directory, i);
-        //    save_lda_model(model, filename);
-        //    sprintf(filename,"%s/%03d.gamma",directory, i);
-            // gather gammas across workers
-		//		      	for (k = 0; k < model->num_topics; k++)
-		//			  	{
-		//			  		if (myid < 1) printf("**** saving gamma matrix topic %d , %d ****\n", k,myid);
-		//			  		if (myid > 0)
-		//			  		{
-		//						for (d = myid; d < corpus->num_docs; d += nproc)
-		//			  			{
-		//	    					//MPI_Request request;
-		//	 						gamma_local = var_gamma_local[d][k];
-		//							MPI_Send(&gamma_local,1,MPI_DOUBLE,0,d,MPI_COMM_WORLD);
-		//							 if (d >  corpus->num_docs - 5) printf("**** source %d  sent****\n",d);
-		//			  			}
-		//				    }
-		//			  		else
-		//			  		{
-		//						  //for (d = corpus->num_docs/nproc-1; d < corpus->num_docs; d++) // num_docs -num_docs/nproc
-		//						  for (d = corpus->num_docs/nproc + 1; d < corpus->num_docs; d++) // num_docs -num_docs/nproc
-		//						  {
-		//	    					MPI_Status status;
 
-		//							  MPI_Recv(&gamma_global,1,MPI_DOUBLE,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
-		//						  	  if (status.MPI_TAG > corpus->num_docs - 5) printf("**** source %d  received****\n",status.MPI_TAG);
-		//						  	  var_gamma[status.MPI_TAG][k] = gamma_global;
-		//						  }
-		//						for (d = myid; d < corpus->num_docs; d += nproc)
-		//			  			{
-			    					//MPI_Request request;
-		//	 						gamma_local = var_gamma_local[d][k];
-		//							var_gamma[d][k] = gamma_local;
-		//			  			}
-
-		//					}
-		//					if (myid < 1) printf("*****%d hit barrier*****\n",myid);
-		//					MPI_Barrier(MPI_COMM_WORLD);
-
-		//			  	}
-					  	// only the first worker on each machine should do this!
-		//					if (myid < 1)
-		//					{
-		//						save_gamma(filename, var_gamma, corpus->num_docs, model->num_topics);
-		//					}
-    	//				MPI_Barrier(MPI_COMM_WORLD);
-		//	}
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
@@ -373,22 +317,6 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
 		}
 	MPI_Barrier(MPI_COMM_WORLD);
 
-    // output the word assignments (for visualization)
-   // if (myid < 1)
-   // {
-//			sprintf(filename, "%s/word-assignments.dat", directory);
-//			FILE* w_asgn_file = fopen(filename, "w");
-//			//need to parallel here as well
-
-//			for (d = 0; d < corpus->num_docs; d++)
-//			{
-//				if ((d % 1000000) == 0) printf("final e step document %d\n",d);
-//				likelihood += lda_inference(&(corpus->docs[d]), model, var_gamma[d], phi);
-//				write_word_assignment(w_asgn_file, &(corpus->docs[d]), phi, model);
-//			}
-//			fclose(w_asgn_file);
-
-//	}
 	fclose(likelihood_file);
 }
 
@@ -516,14 +444,12 @@ int main(int argc, char* argv[])
         }
         if (strcmp(operation, "inf")==0)
         {
-
             // usage: lda inf [settings] [model] [data] [output filename]
 
             char* settings_path = argv[2];
             char* model_path = argv[3];
             char* corpus_path = argv[4];
             char* output_name = argv[5];
-
 
             read_settings(settings_path);
             corpus = read_data(corpus_path);
