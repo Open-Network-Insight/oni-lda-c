@@ -127,6 +127,9 @@ where [M] is the number of unique terms in the document, and the
 in the document.  Note that [term_1] is an integer which indexes the
 term; it is not a string.
 
+This file must be loaded onto each MPI host in the working directories which MPI will use (typically, by default this
+is a directory on the host with the same name as the directory which MPI is invoked).
+
 ### Run oni-lda-c for topic estimation
 
 The command line used to invoke lda will vary with MPI implementation. Here is a sample command line:
