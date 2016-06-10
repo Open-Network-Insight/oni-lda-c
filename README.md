@@ -171,7 +171,7 @@ There are two files that will appear in the output directory:
 
 **final.beta** in which each row corresponds to a topic and each row contains the natural logarithm of the probability of each word given that topic.
 
-For example,  if in topic 1, the probability of word 1 were 0.1, the probability of word 2 were 0.89 and the probability of word 3 were 0.01, then
+For example,  if in topic 1, the probability of word 1 were 0.1, the probability of word 2 were 0.89 and the probability of word 3 were 0.01,
 then the first line of final.beta would be  −2.302585093 −0.116533816 −4.605170186
 
 **final.gamma** in which each row corresponds to a document and each row contains the unnormalized probabilities of the topics for that document.
