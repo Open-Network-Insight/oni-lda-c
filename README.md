@@ -1,16 +1,16 @@
 # oni-lda-c
 
-Parallel implementation of latent Dirchlet allocation for OpenNetworkInsight, version 1.0.1
+Parallel implementation of latent Dirchlet allocation for Open-Network-Insight, version 1.0.1
 
-oni-lda-c is a program for *topic modelling*:  From a collection documents and integer k, infer k topics and assign to each document a mixture of topics and to each topic a mixture of words. 
+oni-lda-c is a program for *topic modelling*:  From a collection of documents and integer k, infer k topics and assign to each document a mixture of topics and to each topic a mixture of words. 
 
-Topic modelling is used in the OpenNetworkInsights suspicious connections analysis to generate profiles of typical traffic on the network and estimate
+Topic modelling is used in the Open-Network-Insight suspicious connections analysis to generate profiles of typical traffic on the network and estimate
 the probability of a given communication occurring between two IPs.  Network traffic on a particular channel corresponds to a "document" and
 summaries of the traffic are the "words". 
 
 For example, in a netflow analysis the document is communication between two IP addresses and
 and the "words" are summaries of the netflow records between the two. The
-"topics" are then profiles common traffic on the network, the mixture of topic to the documents
+"topics" are then profiles of common traffic on the network, the mixture of topic to the documents
 is a decomposition of the traffic between two IPs into these common traffic profiles.  For given communication, we can estimate its probablity of occurrence between a given IP pair and flag it as "suspicious".  Similarly, in an analysis based on the DNS protocols, the documents are the DNS queries
 coming from a given client IP address, and the words are summaries of the DNS responses.
 
@@ -21,7 +21,7 @@ To learn more about topic modelling, we suggest that you start with [these mater
 
 ## Getting Started
 
-These instructions are for installing oni-lda-c as a standalone topic modelling tool. If you wish to install oni-lda-c as part of OpenNetworkInsights, please follow the instructions [here for version 1.0.1](https://github.com/Open-Network-Insight/open-network-insight/wiki). 
+These instructions are for installing oni-lda-c as a standalone topic modelling tool. If you wish to install oni-lda-c as part of Open-Network-Insight, please follow the instructions [here for version 1.0.1](https://github.com/Open-Network-Insight/open-network-insight/wiki). 
 Even if you wish only to use oni-lda-c as a part of oni, the material in this README file may be helpful for configuring and understanding oni-lda-c.
 
 ### Prerequisites
@@ -187,11 +187,11 @@ oni-lda-c is licensed under the GNU Lesser Public License, version 2.1
 
 ## Contributing
 
-Because of the critical position that oni-lda-c holds in the OpenNetworkInsight system, contributions to oni-lda-c will be carefully vetted.
+Because of the critical position that oni-lda-c holds in the Open-Network-Insight system, contributions to oni-lda-c will be carefully vetted.
 
 ## Issues
 
-Report issues at the [OpenNetworkInsight issues page](https://github.com/Open-Network-Insight/open-network-insight/issues).
+Report issues at the [Open-Network-Insight issues page](https://github.com/Open-Network-Insight/open-network-insight/issues).
 
 ## Maintainers
 
