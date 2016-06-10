@@ -189,7 +189,10 @@ Report issues at the [OpenNetworkInsight issues page](https://github.com/Open-Ne
 
 ## Maintainers
 
-[Nathan Segerlind](https://github.com/NathanSegerlind)
+
 [Ricardo Barona](https://github.com/rabarona)
+
+[Nathan Segerlind](https://github.com/NathanSegerlind)
+
 [Everardo Lopez Sandoval](https://github.com/EverLoSa)
 
