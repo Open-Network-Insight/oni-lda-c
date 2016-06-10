@@ -5,9 +5,15 @@ Parallel implementation of latent Dirchlet allocation for OpenNetworkInsight, ve
 oni-lda-c is a program for *topic modelling*:  From a collection documents and integer k, infer k topics and assign to each document a mixture of topics and to each topic a mixture of words. 
 
 Topic modelling is used in the OpenNetworkInsights suspicious connections analysis to generate profiles of typical traffic on the network and estimate
-the probability of a given communication occurring between two IPs. A pair of IPs is a "document"
-and the communications between the IPs are the "words". The "topics" are then profiles common traffic on the network, the mixture of topic to the documents
-is a decomposition of the traffic between two IPs into these common traffic profiles.  For given communication, we can estimate its probablity of occurrence between a given IP pair and flag it as "suspicious".
+the probability of a given communication occurring between two IPs.  Network traffic on a particular channel corresponds to a "document" and
+summaries of the traffic are the "words". 
+
+For example, in a netflow analysis the document is communication between two IP addresses and
+and the "words" are summaries of the netflow records between the two. The
+"topics" are then profiles common traffic on the network, the mixture of topic to the documents
+is a decomposition of the traffic between two IPs into these common traffic profiles.  For given communication, we can estimate its probablity of occurrence between a given IP pair and flag it as "suspicious".  Similarly, in an analysis based on the DNS protocols, the documents are the DNS queries
+coming from a given client IP address, and the words are summaries of the DNS responses.
+
 
 To learn more about topic modelling, we suggest that you start with [these materials](https://www.cs.princeton.edu/~blei/topicmodeling.html).
 
