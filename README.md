@@ -33,8 +33,9 @@ distribution.
 
 Compilation requires that MPI libraries have been installed on the machine where oni-lda-c will be compiled. Other than that, just make in the top oni-lda-c directory:
 ```
-[user@system ~]$ cd oni-lda-c
-[user@system  oni-lda-c]$ make
+[user@system  ~]$ cd oni-lda-c/
+[user@system  oni-lda-c]$ make clean ; make
+rm -f *.o
 mpicc -O3 -Wall -g   -c -o lda-data.o lda-data.c
 mpicc -O3 -Wall -g   -c -o lda-estimate.o lda-estimate.c
 lda-estimate.c: In function ‘run_em’:
@@ -45,7 +46,7 @@ mpicc -O3 -Wall -g   -c -o utils.o utils.c
 mpicc -O3 -Wall -g   -c -o cokus.o cokus.c
 mpicc -O3 -Wall -g   -c -o lda-alpha.o lda-alpha.c
 mpicc -O3 -Wall -g lda-data.o lda-estimate.o lda-model.o lda-inference.o utils.o cokus.o lda-alpha.o -o lda -lm
-[user@system  oni-lda-c]$ ls lda
+[user@system oni-lda-c]$ ls lda
 lda
 ```
 ###  Configuration
