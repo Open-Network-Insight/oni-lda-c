@@ -420,7 +420,7 @@ int main(int argc, char* argv[])
     {
         if (strcmp(operation, "est")==0)
         {
-            // usage: lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory]
+            // usage: lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory] <prg seed>
 
             float alpha = atof(argv[2]); //should read alpha in as a vector instead of from args
             int ntopics = atoi(argv[3]);
@@ -429,6 +429,12 @@ int main(int argc, char* argv[])
             char* corpus_path = argv[6];
             char* initialization_option = argv[7];
             char* output_directory = argv[8];
+            
+            if (argc > 8) 
+            {
+                long seed = atol(argv[9]);
+                seedMT(seed);
+            }
 
 
             NTOPICS = ntopics; // TODO: get rid of global non-constants
@@ -461,7 +467,7 @@ int main(int argc, char* argv[])
     }
     else
     {
-        printf("usage : lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory]\n");
+        printf("usage : lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory] <PRG seed>\n");
         printf("        lda inf [settings] [model] [data] [output filename]\n");
     }
     return(0);
