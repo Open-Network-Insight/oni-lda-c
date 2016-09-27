@@ -24,6 +24,8 @@ To learn more about topic modelling, we suggest that you start with [these mater
 These instructions are for installing oni-lda-c as a standalone topic modelling tool. If you wish to install oni-lda-c as part of Open-Network-Insight, please follow the instructions [here for version 1.0.1](https://github.com/Open-Network-Insight/open-network-insight/wiki). 
 Even if you wish only to use oni-lda-c as a part of oni, the material in this README file may be helpful for configuring and understanding oni-lda-c.
 
+To install oni-lda-c standalone, see the accompanying [INSTALL.md] file.
+
 ### Command line
 
 The command line used to invoke lda will vary with MPI implementation. Here is a sample command line:
