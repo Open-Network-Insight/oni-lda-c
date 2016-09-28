@@ -1,10 +1,10 @@
-# oni-lda-c
+# spot-lda-c
 
-Parallel implementation of latent Dirchlet allocation for Open-Network-Insight, version 1.0.1
+Parallel implementation of latent Dirchlet allocation for Apache Spot (incubating).
 
-oni-lda-c is a program for *topic modelling*:  From a collection of documents and integer k, infer k topics and assign to each document a mixture of topics and to each topic a mixture of words. 
+spot-lda-c is a program for *topic modelling*:  From a collection of documents and integer k, infer k topics and assign to each document a mixture of topics and to each topic a mixture of words. 
 
-Topic modelling is used in the Open-Network-Insight suspicious connections analysis to generate profiles of typical traffic on the network and estimate
+Topic modelling is used in the Apache Spot suspicious connections analysis to generate profiles of typical traffic on the network and estimate
 the probability of a given communication occurring between two IPs.  Network traffic on a particular channel corresponds to a "document" and
 summaries of the traffic are the "words". 
 
@@ -17,12 +17,12 @@ coming from a given client IP address, and the words are summaries of the DNS re
 
 To learn more about topic modelling, we suggest that you start with [these materials](https://www.cs.princeton.edu/~blei/topicmodeling.html).
 
-**On the shoulders of giants**: oni-lda-c is an MPI parallelization of [the BleiLab's single processor lda-c program](https://github.com/blei-lab/lda-c).
+**On the shoulders of giants**: spot-lda-c is an MPI parallelization of [the BleiLab's single processor lda-c program](https://github.com/blei-lab/lda-c).
 
 ## Getting Started
 
-These instructions are for installing oni-lda-c as a standalone topic modelling tool. If you wish to install oni-lda-c as part of Open-Network-Insight, please follow the instructions [here for version 1.0.1](https://github.com/Open-Network-Insight/open-network-insight/wiki). 
-Even if you wish only to use oni-lda-c as a part of oni, the material in this README file may be helpful for configuring and understanding oni-lda-c.
+These instructions are for installing spot-lda-c as a standalone topic modelling tool. If you wish to install spot-lda-c as part of Apache Spot, please follow the instructions [here for version 1.0.1](https://github.com/Apache Spot/open-network-insight/wiki). 
+Even if you wish only to use spot-lda-c as a part of oni, the material in this README file may be helpful for configuring and understanding spot-lda-c.
 
 ### Command line
 
@@ -47,13 +47,13 @@ Yes, PROCESS_COUNT appears twice right now (once for MPI and once for LDA).
 
 Example:
 ```
-[user@system ~]$ cd oni-lda-c 
+[user@system ~]$ cd spot-lda-c 
 [user@system ~]$  mpiexec -n 20 -f machinefile ./lda est 2.5  12 settings.txt 20 corpus20151031.txt random results20151031
 ```
 
-### oni-lda-c input 
+### spot-lda-c input 
 
-The corpus of documents and words must be preprocessed into a single file for ingestion by oni-lda-c
+The corpus of documents and words must be preprocessed into a single file for ingestion by spot-lda-c
 In this representation, each document is represented as a sparse vector of word
 counts. That is, the data is a text file where each line is of the form:
 
@@ -66,7 +66,7 @@ term; it is not a string.
 
 This file must be loaded onto each MPI host in the working directories which MPI will use (typically, by default this
 is a directory on the host with the same name as the directory which MPI is invoked).
-## oni-lda-c output
+## spot-lda-c output
 
 
 There are two files that will appear in the output directory:
@@ -85,15 +85,15 @@ then document 1 would a topic mix of approximately 0.3% topic 1, 0.3% topic 2, 0
 
 ## Licensing
 
-oni-lda-c is licensed under the GNU Lesser Public License, version 2.1
+spot-lda-c is licensed under the GNU Lesser Public License, version 2.1
 
 ## Contributing
 
-Because of the critical position that oni-lda-c holds in the Open-Network-Insight system, contributions to oni-lda-c will be carefully vetted.
+Because of the critical position that spot-lda-c holds in the Apache Spot system, contributions to spot-lda-c will be carefully vetted.
 
 ## Issues
 
-Report issues at the [Open-Network-Insight issues page](https://github.com/Open-Network-Insight/open-network-insight/issues).
+Report issues at the [Apache Spot issues page](https://github.com/Apache Spot/open-network-insight/issues).
 
 ## Maintainers
 
