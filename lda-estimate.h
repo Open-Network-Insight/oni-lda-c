@@ -37,8 +37,7 @@ void save_gamma(char* filename,
 
 void run_em(char* start,
             char* directory,
-            corpus* corpus,
-            int const nproc);
+            corpus* corpus);
 
 void read_settings(char* filename);
 

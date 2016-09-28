@@ -109,7 +109,7 @@ void save_gamma(char* filename, double** gamma, int num_docs, int num_topics)
  *
  */
 
-void run_em(char* start, char* directory, corpus* corpus, int nproc)
+void run_em(char* start, char* directory, corpus* corpus)
 {
 
     int d, k, n;
@@ -178,11 +178,13 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
 
     sprintf(filename, "%s/likelihood.dat", directory);
     FILE* likelihood_file = fopen(filename, "w");
-	int myid, pnum,tag;
+    
+    int myid, pnum, tag;
 
-	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-	MPI_Comm_size(MPI_COMM_WORLD, &pnum);
-
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    MPI_Comm_size(MPI_COMM_WORLD, &pnum);
+        
+        
     while (((converged < 0) || (converged > EM_CONVERGED) || (i <= 2)) && (i <= EM_MAX_ITER))
     {
         i++;
@@ -198,7 +200,7 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
         zero_initialize_ss(ss, model);
         ss_local = ss;
 
-        for (d = myid; d < corpus->num_docs; d += nproc)
+        for (d = myid; d < corpus->num_docs; d += pnum)
         {
             if ((d % 1000000) == 0) printf("document %d\n",d);
             likelihood_local += doc_e_step(&(corpus->docs[d]),
@@ -280,7 +282,7 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
         if (myid == 0) printf("**** saving gamma matrix topic %d  ****\n", k);
         if (myid > 0)
         {
-            for (d = myid; d < corpus->num_docs; d += nproc)
+            for (d = myid; d < corpus->num_docs; d += pnum)
             {
                 //MPI_Request request;
                 gamma_local = var_gamma_local[d][k];
@@ -291,7 +293,7 @@ void run_em(char* start, char* directory, corpus* corpus, int nproc)
         else
         {
             for (d=0 ; d < corpus->num_docs; d++) {
-                if (d % nproc != 0)  // these documents were handled on other workers and must be gathered
+                if (d % pnum != 0)  // these documents were handled on other workers and must be gathered
                 {
                     MPI_Status status;
                     MPI_Recv(&gamma_global, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
@@ -414,22 +416,28 @@ int main(int argc, char* argv[])
     long t1;
     (void) time(&t1);
     seedMT(t1);
-    // seedMT(4357U);
 
     if (argc > 1)
     {
         if (strcmp(operation, "est")==0)
         {
-            // usage: lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory]
+            // usage: lda est alpha k settings data random/seeded/* output_directory [prg seed]
 
             float alpha = atof(argv[2]); //should read alpha in as a vector instead of from args
             int ntopics = atoi(argv[3]);
             char* settings_path = argv[4];
-            int nproc = atoi(argv[5]);
-            char* corpus_path = argv[6];
-            char* initialization_option = argv[7];
-            char* output_directory = argv[8];
 
+            char* corpus_path = argv[5];
+            char* initialization_option = argv[6];
+            char* output_directory = argv[7];
+           
+            
+            if (argc > 8) 
+            {
+                long seed = atol(argv[8]);
+                seedMT(seed);
+            }
+            
 
             NTOPICS = ntopics; // TODO: get rid of global non-constants
             INITIAL_ALPHA = alpha; // TODO: get rid of global non-constants
@@ -439,12 +447,12 @@ int main(int argc, char* argv[])
             make_directory(output_directory);
 
             MPI_Init(&argc, &argv);
-            run_em(initialization_option, output_directory, corpus, nproc);
+            run_em(initialization_option, output_directory, corpus);
             MPI_Finalize();
         }
         if (strcmp(operation, "inf")==0)
         {
-            // usage: lda inf [settings] [model] [data] [output filename]
+            // usage: lda inf settings model data output_filename
 
             char* settings_path = argv[2];
             char* model_path = argv[3];
@@ -461,8 +469,8 @@ int main(int argc, char* argv[])
     }
     else
     {
-        printf("usage : lda est [alpha] [k] [settings] [#processes] [data] [random/seeded/*] [output directory]\n");
-        printf("        lda inf [settings] [model] [data] [output filename]\n");
+        printf("usage : lda est alpha k settings_file data random/seeded/* output_directory [PRG seed]\n");
+        printf("        lda inf settings_file model data output_filename\n");
     }
     return(0);
 }
