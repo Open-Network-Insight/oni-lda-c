@@ -24,6 +24,8 @@ To learn more about topic modelling, we suggest that you start with [these mater
 These instructions are for installing spot-lda-c as a standalone topic modelling tool. If you wish to install spot-lda-c as part of Apache Spot, please follow the instructions [here for version 1.0.1](https://github.com/Apache Spot/open-network-insight/wiki). 
 Even if you wish only to use spot-lda-c as a part of oni, the material in this README file may be helpful for configuring and understanding spot-lda-c.
 
+To install oni-lda-c standalone, see the accompanying [INSTALL.md] file.
+
 ### Command line
 
 The command line used to invoke lda will vary with MPI implementation. Here is a sample command line:
