@@ -4,9 +4,9 @@ Parallel implementation of latent Dirchlet allocation using MPI for Apache Spot 
 
 ## Getting Started
 
-These instructions are for installing spot-lda-c as a standalone topic modelling tool. If you wish to install spot-lda-c as part of Apache Spot, please follow the instructions [here for version 1.1](https://github.com/Apache Spot/open-network-insight/wiki). 
+These instructions are for installing spot-lda-c as a standalone topic modelling tool. If you wish to install spot-lda-c as part of Apache Spot, please follow the instructions [here]. 
 
-Even if you wish only to use spot-lda-c as a part of oni, the material in this README file may be helpful for configuring and understanding spot-lda-c.
+Even if you wish only to use spot-lda-c as a part of Apache Spot, the material in this README file may be helpful for configuring and understanding spot-lda-c.
 
 ### Prerequisites
 
